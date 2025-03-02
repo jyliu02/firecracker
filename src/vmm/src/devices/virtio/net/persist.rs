@@ -148,22 +148,22 @@ impl Persist<'_> for Net {
             NET_NUM_QUEUES,
             NET_QUEUE_MAX_SIZE,
         )?;
-        net.irq_trigger.irq_status = Arc::new(AtomicU32::new(state.virtio_state.interrupt_status));
+        //net.irq_trigger.irq_status = Arc::new(AtomicU32::new(state.virtio_state.interrupt_status));
         net.avail_features = state.virtio_state.avail_features;
         net.acked_features = state.virtio_state.acked_features;
 
         if state.virtio_state.activated {
             let supported_flags: u32 = Net::build_tap_offload_features(net.acked_features);
-            net.tap
-                .set_offload(supported_flags)
-                .map_err(NetPersistError::TapSetOffload)?;
+            //net.tap.as_ref().unwrap()
+            //    .set_offload(supported_flags)
+            //    .map_err(NetPersistError::TapSetOffload)?;
 
             net.device_state = DeviceState::Activated(constructor_args.mem);
 
             // Recreate `Net::rx_buffer`. We do it by re-parsing the RX queue. We're temporarily
             // rolling back `next_avail` in the RX queue and call `parse_rx_descriptors`.
             net.queues[RX_INDEX].next_avail -= state.rx_buffers_state.parsed_descriptor_chains_nr;
-            net.parse_rx_descriptors();
+            //net.parse_rx_descriptors();
             net.rx_buffer.used_descriptors = state.rx_buffers_state.used_descriptors;
             net.rx_buffer.used_bytes = state.rx_buffers_state.used_bytes;
         }

@@ -39,6 +39,7 @@ pub enum TapError {
 
 const TUNTAP: ::std::os::raw::c_uint = 84;
 ioctl_iow_nr!(TUNSETIFF, TUNTAP, 202, ::std::os::raw::c_int);
+ioctl_iow_nr!(IFF_ATTACH_QUEUE, TUNTAP, 0x200, ::std::os::raw::c_int);
 ioctl_iow_nr!(TUNSETOFFLOAD, TUNTAP, 208, ::std::os::raw::c_uint);
 ioctl_iow_nr!(TUNSETVNETHDRSZ, TUNTAP, 216, ::std::os::raw::c_int);
 
@@ -132,11 +133,14 @@ impl Tap {
 
         // SAFETY: We just checked that the fd is valid.
         let tuntap = unsafe { File::from_raw_fd(fd) };
+        let flags =
+            i16::try_from(gen::IFF_TAP | gen::IFF_NO_PI | gen::IFF_VNET_HDR | gen::IFF_MULTI_QUEUE)
+                .unwrap();
 
         let terminated_if_name = build_terminated_if_name(if_name)?;
         let ifreq = IfReqBuilder::new()
             .if_name(&terminated_if_name)
-            .flags(i16::try_from(gen::IFF_TAP | gen::IFF_NO_PI | gen::IFF_VNET_HDR).unwrap())
+            .flags(flags)
             .execute(&tuntap, TUNSETIFF())
             .map_err(|io_error| TapError::IfreqExecuteError(io_error, if_name.to_owned()))?;
 

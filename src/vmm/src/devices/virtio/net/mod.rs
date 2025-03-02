@@ -10,19 +10,20 @@ pub const NET_QUEUE_MAX_SIZE: u16 = 256;
 /// Maximum size of the frame buffers handled by this device.
 pub const MAX_BUFFER_SIZE: usize = 65562;
 /// The number of queues of the network device.
-pub const NET_NUM_QUEUES: usize = 2;
+pub const NET_NUM_QUEUES: usize = 3;
 pub const NET_QUEUE_SIZES: [u16; NET_NUM_QUEUES] = [NET_QUEUE_MAX_SIZE; NET_NUM_QUEUES];
 /// The index of the rx queue from Net device queues/queues_evts vector.
 pub const RX_INDEX: usize = 0;
 /// The index of the tx queue from Net device queues/queues_evts vector.
 pub const TX_INDEX: usize = 1;
+/// The index of the ctrl queue from Net device queues/queues_evts vector.
+pub const CTRL_INDEX: usize = 2;
 
 pub mod device;
 mod event_handler;
 pub mod metrics;
 pub mod persist;
 mod tap;
-pub mod test_utils;
 
 mod gen;
 
@@ -39,6 +40,8 @@ pub enum NetQueue {
     Rx,
     /// The TX queue
     Tx,
+    /// The Control queue
+    Ctrl,
 }
 
 /// Errors the network device can trigger.

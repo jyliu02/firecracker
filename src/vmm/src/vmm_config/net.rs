@@ -19,6 +19,7 @@ use crate::VmmError;
 pub struct NetworkInterfaceConfig {
     /// ID of the guest network interface.
     pub iface_id: String,
+    // TODO: number of queues
     /// Host level path for the guest network interface.
     pub host_dev_name: String,
     /// Guest MAC address.
