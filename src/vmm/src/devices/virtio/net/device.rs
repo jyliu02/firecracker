@@ -1223,8 +1223,6 @@ impl Worker {
         // * len will never be bigger that u32::MAX
         let len: u32 = len.try_into().unwrap();
 
-        debug!("worker {}: read {} bytes from tap", self.id, len);
-
         // SAFETY:
         // * `rx_buffer` has at least one `DescriptorChain`
         // * `read_tap` passes the first `DescriptorChain` to `readv` so we can't have read more
@@ -1271,11 +1269,6 @@ impl Worker {
             }
 
             self.write_to_tap();
-            debug!(
-                "worker {}: wrote {} bytes to tap",
-                self.id,
-                self.tx_buffer.len()
-            );
 
             self.tx_queue
                 .add_used(head_index, 0)
@@ -1323,24 +1316,28 @@ impl Worker {
         let mut events = vec![EpollEvent::default(); 16];
 
         loop {
-            match self.epoll.wait(-1, &mut events) {
-                Ok(cnt) => {
-                    for event in &events[0..cnt] {
-                        let source = event.data();
+            self.process_rx_queue_event();
+            self.process_tx_queue_event();
+            self.process_tap_rx_event();
 
-                        // TODO: measure the time cost of each handler
-                        match source {
-                            Self::PROCESS_VIRTQ_RX => self.process_rx_queue_event(),
-                            Self::PROCESS_VIRTQ_TX => self.process_tx_queue_event(),
-                            Self::PROCESS_TAP_RX => self.process_tap_rx_event(),
-                            _ => {
-                                warn!("Net worker: Spurious event received: {:?}", source);
-                            }
-                        }
-                    }
-                }
-                _ => continue,
-            }
+            //match self.epoll.wait(-1, &mut events) {
+            //    Ok(cnt) => {
+            //        for event in &events[0..cnt] {
+            //            let source = event.data();
+            //
+            //            // TODO: measure the time cost of each handler
+            //            match source {
+            //                Self::PROCESS_VIRTQ_RX => self.process_rx_queue_event(),
+            //                Self::PROCESS_VIRTQ_TX => self.process_tx_queue_event(),
+            //                Self::PROCESS_TAP_RX => self.process_tap_rx_event(),
+            //                _ => {
+            //                    warn!("Net worker: Spurious event received: {:?}", source);
+            //                }
+            //            }
+            //        }
+            //    }
+            //    _ => continue,
+            //}
         }
     }
 }
@@ -1392,12 +1389,14 @@ impl Net {
             worker.register_worker_events();
             worker.rx_buffer.min_buffer_size = self.minimum_rx_buffer_size();
 
-            thread::spawn(move || {
-                core_affinity::set_for_current(core_affinity::CoreId {
-                    id: (i * 2) as usize,
+            thread::Builder::new()
+                .name(format!("net-worker-{}", i))
+                .spawn(move || {
+                    core_affinity::set_for_current(core_affinity::CoreId {
+                        id: (7 - i * 2) as usize,
+                    });
+                    worker.run();
                 });
-                worker.run();
-            });
         }
     }
 }
